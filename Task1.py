@@ -2,6 +2,7 @@
 #the indications of FIPS PUB 180-4
 import numpy as np
 import hashlib
+import os
 class SHA256:
     #CONSTANTS
     w = 32
@@ -91,20 +92,23 @@ class SHA256:
             for j in range(int(size_block/size_word)):
                 words=[i][j*size_word:(1+j)*size_word]
         return words
-    def preprocessing(M):
+    def preprocessing(M, initial_state=None):
         if isinstance(M, str):
             M_bytes = M.encode('utf-8')
         else:
             M_bytes = M
         M_bits = "".join(f"{b:08b}" for b in M_bytes)
-        H_0 = SHA256.H_0.copy()
+        if(initial_state == None):
+            H_0 = SHA256.H_0.copy()
+        else:
+            H_0 = initial_state
         padded_M = SHA256.padding(M_bits)
         parsed_padded_M = SHA256.parsing(padded_M)
         return H_0,parsed_padded_M
 
     #HASH COMPUTATION
-    def hash_computation(M):
-        H,parsed_padded_M = SHA256.preprocessing(M)
+    def hash_computation(M,initial_state=None):
+        H,parsed_padded_M = SHA256.preprocessing(M,initial_state)
         N = len(parsed_padded_M)
         for i in range(0,N):
             W = SHA256.get_word_block(parsed_padded_M[i])
@@ -139,13 +143,17 @@ class SHA256:
             H[7] = (h + H[7])& 0xFFFFFFFF
         output_hex = f"{H[0]:08x}"+f"{H[1]:08x}"+f"{H[2]:08x}"+f"{H[3]:08x}"+f"{H[4]:08x}"+f"{H[5]:08x}"+f"{H[6]:08x}"+f"{H[7]:08x}"
         return ":".join(output_hex[i:i+2] for i in range(0, len(output_hex), 2))
+        #return output_hex
 
 # TEST AREA
-
-messaggio = b"db:ed:14:ce:b0:01:d1:90:d7:66:b9:01:3d:3b:5b:bf:fa:d6:91:54:75:a9:ba:07:93:2d:2a:c0:57:94:4c:04"
-my = SHA256.hash_computation(messaggio)
-real_hex = hashlib.sha256(messaggio).hexdigest()
-real = ":".join(real_hex[i:i+2] for i in range(0, len(real_hex), 2))
-print(my == real)
-print(my)
-print(real)
+if __name__ == "__main__":
+    count = 0
+    for _ in range(100):
+        test_data = os.urandom(np.random.randint(1, 1000))
+       # messaggio = b"80000000000000000000000000000000"
+        my = SHA256.hash_computation(test_data)
+        real_hex = hashlib.sha256(test_data).hexdigest()
+        real = ":".join(real_hex[i:i+2] for i in range(0, len(real_hex), 2))
+        if (my == real):
+            count = count + 1
+    print(count)
