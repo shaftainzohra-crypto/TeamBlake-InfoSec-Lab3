@@ -61,8 +61,8 @@ class SHA256:
 
     #SECURE HASH ALGORITHM
     #PREPROCESSING
-    def padding(M):
-        l = len(M)
+    def padding(M,previous_length_bits = 0):
+        l = len(M)+previous_length_bits
         l_bin = f"{l:064b}"
         k = (448 - (l+1))%512
         pad = M + "1"
@@ -153,7 +153,7 @@ if __name__ == "__main__":
        # messaggio = b"80000000000000000000000000000000"
         my = SHA256.hash_computation(test_data)
         real_hex = hashlib.sha256(test_data).hexdigest()
-       # real = ":".join(real_hex[i:i+2] for i in range(0, len(real_hex), 2))
-        if (my == real):
+        #real = ":".join(real_hex[i:i+2] for i in range(0, len(real_hex), 2))
+        if (my == real_hex):
             count = count + 1
     print(count)
