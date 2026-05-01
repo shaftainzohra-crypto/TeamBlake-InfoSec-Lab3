@@ -61,8 +61,8 @@ class SHA256:
 
     #SECURE HASH ALGORITHM
     #PREPROCESSING
-    def padding(M,previous_length_bits = 0):
-        l = len(M)+previous_length_bits
+    def padding(M,previous_message=None):
+        l = len(M)+len(previous_message)
         l_bin = f"{l:064b}"
         k = (448 - (l+1))%512
         pad = M + "1"
