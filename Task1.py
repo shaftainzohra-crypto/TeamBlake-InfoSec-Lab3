@@ -61,14 +61,16 @@ class SHA256:
 
     #SECURE HASH ALGORITHM
     #PREPROCESSING
-    def padding(M,previous_message=None):
-        l = len(M)+len(previous_message)
+    def padding(M, previous_len_bits=0):
+        l = previous_len_bits + len(M)
         l_bin = f"{l:064b}"
-        k = (448 - (l+1))%512
+
+        k = (448 - (l + 1)) % 512
+
         pad = M + "1"
-        for i in range(k):
-            pad = pad + "0"
-        pad = pad + l_bin
+        pad += "0" * k
+        pad += l_bin
+
         return pad
 
     def parsing(pad):
@@ -92,23 +94,27 @@ class SHA256:
             for j in range(int(size_block/size_word)):
                 words=[i][j*size_word:(1+j)*size_word]
         return words
-    def preprocessing(M, initial_state=None):
+    def preprocessing(M, initial_state=None, previous_len_bits=0):
         if isinstance(M, str):
             M_bytes = M.encode('utf-8')
         else:
             M_bytes = M
+
         M_bits = "".join(f"{b:08b}" for b in M_bytes)
-        if(initial_state == None):
+
+        if initial_state is None:
             H_0 = SHA256.H_0.copy()
         else:
-            H_0 = initial_state
-        padded_M = SHA256.padding(M_bits)
+            H_0 = initial_state.copy()
+
+        padded_M = SHA256.padding(M_bits, previous_len_bits)
         parsed_padded_M = SHA256.parsing(padded_M)
-        return H_0,parsed_padded_M
+
+        return H_0, parsed_padded_M
 
     #HASH COMPUTATION
-    def hash_computation(M,initial_state=None):
-        H,parsed_padded_M = SHA256.preprocessing(M,initial_state)
+    def hash_computation(M, initial_state=None, previous_len_bits=0):
+        H, parsed_padded_M = SHA256.preprocessing(M,initial_state,previous_len_bits)
         N = len(parsed_padded_M)
         for i in range(0,N):
             W = SHA256.get_word_block(parsed_padded_M[i])
