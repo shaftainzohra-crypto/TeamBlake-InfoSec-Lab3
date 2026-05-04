@@ -18,50 +18,50 @@ class SHA256:
     H_0 = [int("6a09e667",16), int("bb67ae85",16), int("3c6ef372",16), int("a54ff53a",16), int("510e527f",16), int("9b05688c",16), int("1f83d9ab",16), int("5be0cd19",16)]
 
     # FUNCTIONS
-    def Ch(x,y,z):
+    def __Ch(x,y,z):
         return (x & y)^( (~ x & 0xFFFFFFFF) & z)
 
-    def Maj(x,y,z):
+    def __Maj(x,y,z):
         return (x & y)^( x & z)^(y & z)
 
-    def SHR(x,n):
+    def __SHR(x,n):
         return x>>n
 
-    def SHL(x,n):
+    def __SHL(x,n):
         return (x<<n)& 0xFFFFFFFF
 
-    def ROTR(x,n):
+    def __ROTR(x,n):
         if(n<0 or n>=SHA256.w):
             exit("Invalid length for n")
-        return SHA256.SHR(x,n)|SHA256.SHL(x,SHA256.w-n)
+        return SHA256.__SHR(x,n)|SHA256.__SHL(x,SHA256.w-n)
 
-    def big_sigma_256_0(x):
-        rotr2 = SHA256.ROTR(x,2)
-        rotr13 = SHA256.ROTR(x,13)
-        rotr22 = SHA256.ROTR(x,22)
+    def __big_sigma_256_0(x):
+        rotr2 = SHA256.__ROTR(x,2)
+        rotr13 = SHA256.__ROTR(x,13)
+        rotr22 = SHA256.__ROTR(x,22)
         return rotr2^rotr13^rotr22
 
-    def big_sigma_256_1(x):
-        rotr6 = SHA256.ROTR(x,6)
-        rotr11 = SHA256.ROTR(x,11)
-        rotr25 = SHA256.ROTR(x,25)
+    def __big_sigma_256_1(x):
+        rotr6 = SHA256.__ROTR(x,6)
+        rotr11 = SHA256.__ROTR(x,11)
+        rotr25 = SHA256.__ROTR(x,25)
         return rotr6^rotr11^rotr25
 
-    def small_sigma_256_0(x):
-        rotr7 = SHA256.ROTR(x,7)
-        rotr18 = SHA256.ROTR(x,18)
-        shr3 = SHA256.SHR(x,3)
+    def __small_sigma_256_0(x):
+        rotr7 = SHA256.__ROTR(x,7)
+        rotr18 = SHA256.__ROTR(x,18)
+        shr3 = SHA256.__SHR(x,3)
         return rotr7^rotr18^shr3
 
-    def small_sigma_256_1(x):
-        rotr17 = SHA256.ROTR(x,17)
-        rotr19 = SHA256.ROTR(x,19)
-        shr10 = SHA256.SHR(x,10)
+    def __small_sigma_256_1(x):
+        rotr17 = SHA256.__ROTR(x,17)
+        rotr19 = SHA256.__ROTR(x,19)
+        shr10 = SHA256.__SHR(x,10)
         return rotr17^rotr19^shr10
 
     #SECURE HASH ALGORITHM
     #PREPROCESSING
-    def padding(M, previous_len_bits=0):
+    def __padding(M, previous_len_bits=0):
         l = previous_len_bits + len(M)
         l_bin = f"{l:064b}"
 
@@ -73,20 +73,20 @@ class SHA256:
 
         return pad
 
-    def parsing(pad):
+    def __parsing(pad):
         size = 512
         blocks = []
         for i in range(int(len(pad)/size)):
             blocks.append(pad[i*size:(i+1)*size])
         return blocks
-    def get_word_block(block):
+    def __get_word_block(block):
         size_block = 512
         size_word = 32
         words = []
         for i in range(int(size_block/size_word)):
             words.append(int(block[i*size_word:(i+1)*size_word],2))
         return words
-    def get_all_words(blocks):
+    def __get_all_words(blocks):
         size_block = 512
         size_word = 32
         words = np.array([[]])
@@ -94,32 +94,28 @@ class SHA256:
             for j in range(int(size_block/size_word)):
                 words=[i][j*size_word:(1+j)*size_word]
         return words
-    def preprocessing(M, initial_state=None, previous_len_bits=0):
+    def __preprocessing(M, initial_state=None, previous_len_bits = 0):
         if isinstance(M, str):
             M_bytes = M.encode('utf-8')
         else:
             M_bytes = M
-
         M_bits = "".join(f"{b:08b}" for b in M_bytes)
-
-        if initial_state is None:
+        if(initial_state == None):
             H_0 = SHA256.H_0.copy()
         else:
-            H_0 = initial_state.copy()
-
-        padded_M = SHA256.padding(M_bits, previous_len_bits)
-        parsed_padded_M = SHA256.parsing(padded_M)
-
-        return H_0, parsed_padded_M
+            H_0 = initial_state
+        padded_M = SHA256.__padding(M_bits,previous_len_bits)
+        parsed_padded_M = SHA256.__parsing(padded_M)
+        return H_0,parsed_padded_M
 
     #HASH COMPUTATION
-    def hash_computation(M, initial_state=None, previous_len_bits=0):
-        H, parsed_padded_M = SHA256.preprocessing(M,initial_state,previous_len_bits)
+    def hash_computation(M,initial_state=None, previous_len_bits = 0):
+        H,parsed_padded_M = SHA256.__preprocessing(M,initial_state,previous_len_bits)
         N = len(parsed_padded_M)
         for i in range(0,N):
-            W = SHA256.get_word_block(parsed_padded_M[i])
+            W = SHA256.__get_word_block(parsed_padded_M[i])
             for t in range(16,64):
-                W.append((SHA256.small_sigma_256_1(W[t-2]) + W[t-7]+ SHA256.small_sigma_256_0(W[t-15]) + W[t-16]) & 0xFFFFFFFF)
+                W.append((SHA256.__small_sigma_256_1(W[t-2]) + W[t-7]+ SHA256.__small_sigma_256_0(W[t-15]) + W[t-16]) & 0xFFFFFFFF)
             a = H[0]
             b = H[1]
             c = H[2]
@@ -129,8 +125,8 @@ class SHA256:
             g = H[6]
             h = H[7]
             for t in range(64):
-                T_1 = (h + SHA256.big_sigma_256_1(e) + SHA256.Ch(e,f,g)+ SHA256.K[t] + W[t])& 0xFFFFFFFF
-                T_2 = (SHA256.big_sigma_256_0(a)+ SHA256.Maj(a,b,c)) & 0xFFFFFFFF
+                T_1 = (h + SHA256.__big_sigma_256_1(e) + SHA256.__Ch(e,f,g)+ SHA256.K[t] + W[t])& 0xFFFFFFFF
+                T_2 = (SHA256.__big_sigma_256_0(a)+ SHA256.__Maj(a,b,c)) & 0xFFFFFFFF
                 h = g
                 g = f
                 f = e
