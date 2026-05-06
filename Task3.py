@@ -1,19 +1,37 @@
+import json
 import urllib.parse
 import requests
 from Task1 import SHA256
 
 # ---------------------------------------------------------------------
-# Task 3 — Length-extension attack against SHA256(key || cookie)
+# Task 3 — Length-extension attack against the secret-prefix MAC
+# ---------------------------------------------------------------------
+# The vulnerable endpoint authenticates cookie strings using the
+# secret-prefix MAC construction from Task 2:
+#
+#       MAC(k, m) = SHA256(k || m)
+#
+# Because SHA-256 follows the Merkle-Damgard construction, the public
+# MAC tag can be interpreted as the final internal state after hashing:
+#
+#       secret_key || cookie || SHA256_padding
+#
+# Therefore, an attacker can append extra data to the cookie and compute
+# a valid forged tag without knowing the secret key.
 # ---------------------------------------------------------------------
 
-# Initial values provided in lab3task3.json
-known_cookie_urlenc = "comment%3Dyou+don%27t+need+more+than+128+bits+of+symmetric+keys+for+post-quantum+security"
-known_tag = "4a621734dc9558649a185a8f83d598159407391ce942e29cf11617ed83d5afeb"
+# Load the starting cookie and tag from lab3task3.json
+with open("lab3task3.json", "r") as f:
+    data = json.load(f)
+
+known_cookie_urlenc = data["cookie"]
+known_tag = data["tag"]
 
 BASE_URL = "https://interrato.dev/infosec/lengthextension"
 APPEND = b";admin=true"
 
-# Decode the original cookie as raw bytes.
+# Decode the original URL-encoded cookie as raw bytes.
+# The replacement is needed because "+" represents a space in URL encoding.
 known_cookie = urllib.parse.unquote_to_bytes(
     known_cookie_urlenc.replace("+", "%20")
 )
@@ -29,26 +47,41 @@ def length_extension_attack(
     Forge a new cookie and MAC tag using a SHA-256 length-extension attack.
 
     Args:
-        known_cookie: The original decoded cookie bytes.
-        known_tag: The valid SHA-256 MAC tag for secret || known_cookie.
-        secret_len: Candidate length of the unknown secret key in bytes.
-        append: Data to append to the cookie.
+        known_cookie:
+            Original decoded cookie bytes.
+
+        known_tag:
+            Valid SHA-256 MAC tag for SHA256(secret_key || known_cookie).
+
+        secret_len:
+            Candidate length of the unknown secret key in bytes.
+
+        append:
+            Data to append to the cookie.
 
     Returns:
-        A tuple containing:
-            - URL-encoded forged cookie
-            - forged SHA-256 tag in hexadecimal format
+        forged_cookie_urlenc:
+            URL-encoded forged cookie.
+
+        forged_tag:
+            Forged SHA-256 tag in hexadecimal format.
     """
 
     # Recover the SHA-256 internal state from the known 256-bit tag.
-    tag_words = [int(known_tag[i:i + 8], 16) for i in range(0, 64, 8)]
+    # SHA-256 state consists of eight 32-bit words.
+    tag_words = [
+        int(known_tag[i:i + 8], 16)
+        for i in range(0, 64, 8)
+    ]
 
     # Compute the bit length of the original authenticated input:
-    # secret_key || known_cookie
-    original_msg_bits = (secret_len + len(known_cookie)) * 8
+    #       secret_key || known_cookie
+    original_msg_bits = (
+        secret_len + len(known_cookie)
+    ) * 8
 
     # Compute SHA-256 glue padding for the unknown original message.
-    # The attacker only needs the length, not the secret key itself.
+    # The attacker only needs the message length, not the secret key itself.
     k = (448 - (original_msg_bits + 1)) % 512
 
     glue_padding = (
@@ -58,8 +91,11 @@ def length_extension_attack(
     )
 
     # At this point, SHA-256 has already processed:
-    # secret_key || known_cookie || glue_padding
-    total_processed_bits = original_msg_bits + len(glue_padding) * 8
+    #       secret_key || known_cookie || glue_padding
+    total_processed_bits = (
+        original_msg_bits
+        + len(glue_padding) * 8
+    )
 
     # Continue SHA-256 from the recovered internal state and hash only
     # the appended data. The previous length ensures correct final padding.
@@ -70,19 +106,26 @@ def length_extension_attack(
     )
 
     # The forged cookie must include the glue padding explicitly, because
-    # the server will compute SHA256(secret_key || forged_cookie) from scratch.
-    forged_cookie_bytes = known_cookie + glue_padding + append
+    # the server recomputes SHA256(secret_key || forged_cookie) from scratch.
+    forged_cookie_bytes = (
+        known_cookie
+        + glue_padding
+        + append
+    )
 
     # URL-encode raw bytes so they can be safely sent as a query parameter.
-    forged_cookie_urlenc = urllib.parse.quote_from_bytes(forged_cookie_bytes)
+    forged_cookie_urlenc = urllib.parse.quote_from_bytes(
+        forged_cookie_bytes
+    )
 
     return forged_cookie_urlenc, forged_tag
 
 
 print("Starting Task 3 length-extension attack...\n")
 
-# The key length is unknown, so we brute-force reasonable candidates.
+# The secret-key length is unknown, so we brute-force reasonable candidates.
 for secret_len in range(1, 65):
+
     forged_cookie, forged_tag = length_extension_attack(
         known_cookie,
         known_tag,
@@ -90,8 +133,9 @@ for secret_len in range(1, 65):
         APPEND
     )
 
-    # Do not use requests' params argument here because the cookie is already
-    # URL-encoded. Passing it through params would double-encode the padding.
+    # The forged cookie is already URL-encoded.
+    # Do not use requests' params argument, otherwise it will double-encode
+    # the glue padding bytes.
     url = f"{BASE_URL}?cookie={forged_cookie}&tag={forged_tag}"
 
     try:
@@ -103,7 +147,7 @@ for secret_len in range(1, 65):
             f"{response.text[:100]}"
         )
 
-        # A 200 response indicates that the forged cookie-tag pair was accepted.
+        # A 200 response means the forged cookie-tag pair was accepted.
         if response.status_code == 200:
             print("\nSUCCESS")
             print("Secret length:", secret_len)
