@@ -1,5 +1,5 @@
 import json
-from SHA256 import SHA256
+from Task1 import SHA256
 from SHA224 import SHA224
 from SHA384 import SHA384
 from SHA512 import SHA512
