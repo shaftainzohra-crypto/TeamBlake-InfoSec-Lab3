@@ -1,6 +1,6 @@
 import secrets
 from MAC import MAC
-from ExtentionLenAttack import length_extension_attack
+from Task3_parametrized import length_extension_attack
 import urllib.parse
 secret_keys = []
 messages = []
