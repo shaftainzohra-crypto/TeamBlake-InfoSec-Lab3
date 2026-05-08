@@ -1,5 +1,5 @@
 import secrets
-from MAC import MAC
+from Task2 import MAC
 from Task3_parametrized import length_extension_attack
 import urllib.parse
 secret_keys = []
