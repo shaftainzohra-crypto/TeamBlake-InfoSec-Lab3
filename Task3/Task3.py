@@ -1,7 +1,11 @@
 import json
 import urllib.parse
 import requests
-from Task1 import SHA256
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from Task1.SHA256 import SHA256
+
 
 # ---------------------------------------------------------------------
 # Task 3 — Length-extension attack against the secret-prefix MAC
@@ -132,7 +136,8 @@ for secret_len in range(1, 65):
         secret_len,
         APPEND
     )
-
+    if isinstance(forged_tag, bytes):
+        forged_tag = forged_tag.hex()
     # The forged cookie is already URL-encoded.
     # Do not use requests' params argument, otherwise it will double-encode
     # the glue padding bytes.

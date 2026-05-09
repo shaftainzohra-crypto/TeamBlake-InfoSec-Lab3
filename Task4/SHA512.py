@@ -122,6 +122,8 @@ class SHA512:
 
     #HASH COMPUTATION
     def hash_computation(M,initial_state=None, previous_len_bits = 0):
+        if not isinstance(M, (bytes, bytearray)):
+            raise TypeError("Input must be byte array only!")
         H,parsed_padded_M = SHA512.__preprocessing(M,initial_state,previous_len_bits)
         N = len(parsed_padded_M)
         for i in range(0,N):
@@ -155,9 +157,8 @@ class SHA512:
             H[5] = (f + H[5])& 0xFFFFFFFFFFFFFFFF
             H[6] = (g + H[6])& 0xFFFFFFFFFFFFFFFF
             H[7] = (h + H[7])& 0xFFFFFFFFFFFFFFFF
-        output_hex = f"{H[0]:016x}"+f"{H[1]:016x}"+f"{H[2]:016x}"+f"{H[3]:016x}"+f"{H[4]:016x}"+f"{H[5]:016x}"+f"{H[6]:016x}"+f"{H[7]:016x}"
-        #return ":".join(output_hex[i:i+2] for i in range(0, len(output_hex), 2))
-        return output_hex
+        output_bytes =   b"".join(h.to_bytes(8, 'big') for h in H)
+        return output_bytes
 
 # TEST AREA
 if __name__ == "__main__":
@@ -166,8 +167,9 @@ if __name__ == "__main__":
         test_data = os.urandom(np.random.randint(1, 1000))
         # messaggio = b"80000000000000000000000000000000"
         my = SHA512.hash_computation(test_data)
+        my_hex = my.hex()
         real_hex = hashlib.sha512(test_data).hexdigest()
         #real = ":".join(real_hex[i:i+2] for i in range(0, len(real_hex), 2))
-        if (my == real_hex):
+        if (my_hex == real_hex):
             count = count + 1
-    print(count)
+    print("Randomized interoperability test: success rate = " + str(count) + "/100")

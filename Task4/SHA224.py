@@ -110,6 +110,8 @@ class SHA224:
 
     #HASH COMPUTATION
     def hash_computation(M,initial_state=None, previous_len_bits = 0):
+        if not isinstance(M, (bytes, bytearray)):
+            raise TypeError("Input must be byte array only!")
         H,parsed_padded_M = SHA224.__preprocessing(M,initial_state,previous_len_bits)
         N = len(parsed_padded_M)
         for i in range(0,N):
@@ -143,9 +145,9 @@ class SHA224:
             H[5] = (f + H[5])& 0xFFFFFFFF
             H[6] = (g + H[6])& 0xFFFFFFFF
             H[7] = (h + H[7])& 0xFFFFFFFF
-        output_hex = f"{H[0]:08x}"+f"{H[1]:08x}"+f"{H[2]:08x}"+f"{H[3]:08x}"+f"{H[4]:08x}"+f"{H[5]:08x}"+f"{H[6]:08x}"
-        #return ":".join(output_hex[i:i+2] for i in range(0, len(output_hex), 2))
-        return output_hex
+        output_bytes =  b"".join(h.to_bytes(4, 'big') for h in H)
+        output_cut = output_bytes[:28]
+        return output_cut
 
 # TEST AREA
 if __name__ == "__main__":
@@ -155,7 +157,9 @@ if __name__ == "__main__":
         # messaggio = b"80000000000000000000000000000000"
         my = SHA224.hash_computation(test_data)
         real_hex = hashlib.sha224(test_data).hexdigest()
+        my_hex = my.hex()
         #real = ":".join(real_hex[i:i+2] for i in range(0, len(real_hex), 2))
-        if (my == real_hex):
+        if (my_hex == real_hex):
             count = count + 1
-    print(count)
+    print("Randomized interoperability test: success rate = " + str(count) + "/100")
+

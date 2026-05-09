@@ -1,7 +1,10 @@
 import json
 import urllib.parse
 import requests
-from Task1 import SHA256
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from Task1.SHA256 import SHA256
 from SHA224 import SHA224
 from SHA384 import SHA384
 from SHA512 import SHA512
@@ -74,6 +77,8 @@ def length_extension_attack(
 
     # Recover the SHA-256 internal state from the known 256-bit tag.
     # SHA-256 state consists of eight 32-bit words.
+    if isinstance(known_tag, bytes):
+        known_tag = known_tag.hex()
     if (hash == "256"):
         word_len = 8
         digest_len = 64
@@ -175,45 +180,3 @@ def length_extension_attack(
 
     return forged_cookie_urlenc, forged_tag
 
-if __name__ == "__main__":
-    print("Starting Task 3 length-extension attack...\n")
-
-    # The secret-key length is unknown, so we brute-force reasonable candidates.
-    for secret_len in range(1, 65):
-
-        forged_cookie, forged_tag = length_extension_attack(
-            known_cookie,
-            known_tag,
-            secret_len,
-            APPEND,
-            "512"
-        )
-
-        # The forged cookie is already URL-encoded.
-        # Do not use requests' params argument, otherwise it will double-encode
-        # the glue padding bytes.
-        url = f"{BASE_URL}?cookie={forged_cookie}&tag={forged_tag}"
-
-        try:
-            response = requests.get(url, timeout=10)
-
-            print(
-                f"[secret_len={secret_len:2d}] "
-                f"Status: {response.status_code} | "
-                f"{response.text[:100]}"
-            )
-
-            # A 200 response means the forged cookie-tag pair was accepted.
-            if response.status_code == 200:
-                print("\nSUCCESS")
-                print("Secret length:", secret_len)
-                print("Forged cookie:", forged_cookie)
-                print("Forged tag:", forged_tag)
-                print("Full URL:", url)
-                break
-
-        except requests.RequestException as e:
-            print(f"[secret_len={secret_len:2d}] Request failed: {e}")
-
-    else:
-        print("\nNo valid secret length found.")
