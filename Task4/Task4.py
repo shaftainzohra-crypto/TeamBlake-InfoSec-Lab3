@@ -49,7 +49,7 @@ for i in range(100):
         if(forged_tag == expected_tag):
             counter_256 = counter_256 + 1
             break
-print(counter_256)
+print("Length extension attack against SHA256: success rate = " + str(counter_256) + "/100")
 for i in range(100):
     for secret_len in range(1, 65):
 
@@ -65,7 +65,7 @@ for i in range(100):
         if(forged_tag == expected_tag):
             counter_224 = counter_224 + 1
             break
-print(counter_224)
+print("Length extension attack against SHA224: success rate = " + str(counter_224) + "/100")
 for i in range(100):
     for secret_len in range(1, 65):
 
@@ -81,7 +81,7 @@ for i in range(100):
         if(forged_tag == expected_tag):
             counter_384 = counter_384 + 1
             break
-print(counter_384)
+print("Length extension attack against SHA384: success rate = " + str(counter_384) + "/100")
 for i in range(100):
     for secret_len in range(1, 65):
 
@@ -97,7 +97,7 @@ for i in range(100):
         if(forged_tag == expected_tag):
             counter_512 = counter_512 + 1
             break
-print(counter_512)
+print("Length extension attack against SHA512: success rate = " + str(counter_512) + "/100")
 for i in range(100):
     for secret_len in range(1, 65):
 
@@ -113,7 +113,7 @@ for i in range(100):
         if(forged_tag == expected_tag):
             counter_512_224 = counter_512_224 + 1
             break
-print(counter_512_224)
+print("Length extension attack against SHA512/224: success rate = " + str(counter_512_224) + "/100")
 
 
 
